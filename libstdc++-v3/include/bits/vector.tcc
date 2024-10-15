@@ -208,13 +208,13 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
     _GLIBCXX20_CONSTEXPR
     vector<_Tp, _Alloc>&
     vector<_Tp, _Alloc>::
-    operator=(const vector<_Tp, _Alloc>& __x)
+    operator=(const vector<_Tp, _Alloc>& __x)  // copy-asgn optr
     {
       if (std::__addressof(__x) != this)
 	{
 	  _GLIBCXX_ASAN_ANNOTATE_REINIT;
 #if __cplusplus >= 201103L
-	  if (_Alloc_traits::_S_propagate_on_copy_assign())
+	  if (_Alloc_traits::_S_propagate_on_copy_assign())  // allocator propagation on copy-asgn 
 	    {
 	      if (!_Alloc_traits::_S_always_equal()
 	          && _M_get_Tp_allocator() != __x._M_get_Tp_allocator())
@@ -236,7 +236,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	  if (__xlen > capacity())
 	    {
 	      pointer __tmp = _M_allocate_and_copy(__xlen, __x.begin(),
-						   __x.end());
+						   __x.end());  // 强异常安全保障
 	      std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
 			    _M_get_Tp_allocator());
 	      _M_deallocate(this->_M_impl._M_start,
@@ -868,7 +868,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	  }
 	else if (__first != __last)
 	  {
-	    vector __tmp(__first, __last, _M_get_Tp_allocator());
+	    vector __tmp(__first, __last, _M_get_Tp_allocator());  // cppref 要求实现 linear complexity！故 gcc 采取先构造临时 vector，再转化为 forward_iterator_tag 版完成插入
 	    insert(__pos,
 		   _GLIBCXX_MAKE_MOVE_ITERATOR(__tmp.begin()),
 		   _GLIBCXX_MAKE_MOVE_ITERATOR(__tmp.end()));

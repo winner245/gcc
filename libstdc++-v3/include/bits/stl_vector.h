@@ -598,15 +598,15 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
        *  by @a __x (unless the allocator traits dictate a different object).
        */
       _GLIBCXX20_CONSTEXPR
-      vector(const vector& __x)
+      vector(const vector& __x)  // copy-ctor
       : _Base(__x.size(),
 	_Alloc_traits::_S_select_on_copy(__x._M_get_Tp_allocator()))
       {
 	this->_M_impl._M_finish =
 	  std::__uninitialized_copy_a(__x.begin(), __x.end(),
 				      this->_M_impl._M_start,
-				      _M_get_Tp_allocator());
-      }
+				      _M_get_Tp_allocator());  
+      }  // std::__uninitialized_copy_a(): 强异常安全保障!
 
 #if __cplusplus >= 201103L
       /**
@@ -617,11 +617,11 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
        *  The contents of the moved instance are a valid, but unspecified
        *  %vector.
        */
-      vector(vector&&) noexcept = default;
+      vector(vector&&) noexcept = default;  // Move-ctor
 
       /// Copy constructor with alternative allocator
       _GLIBCXX20_CONSTEXPR
-      vector(const vector& __x, const __type_identity_t<allocator_type>& __a)
+      vector(const vector& __x, const __type_identity_t<allocator_type>& __a)  // copy-ctor with alternative allocator
       : _Base(__x.size(), __a)
       {
 	this->_M_impl._M_finish =
@@ -656,7 +656,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
     public:
       /// Move constructor with alternative allocator
       _GLIBCXX20_CONSTEXPR
-      vector(vector&& __rv, const __type_identity_t<allocator_type>& __m)
+      vector(vector&& __rv, const __type_identity_t<allocator_type>& __m)  // move-ctor with alternative allocator
       noexcept( noexcept(
 	vector(std::declval<vector&&>(), std::declval<const allocator_type&>(),
 	       std::declval<typename _Alloc_traits::is_always_equal>())) )
@@ -679,7 +679,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	     const allocator_type& __a = allocator_type())
       : _Base(__a)
       {
-	_M_range_initialize(__l.begin(), __l.end(),
+	_M_range_initialize(__l.begin(), __l.end(),// copy-ctor with alternative allocator
 			    random_access_iterator_tag());
       }
 #endif
@@ -1436,7 +1436,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
        */
       _GLIBCXX20_CONSTEXPR
       iterator
-      insert(const_iterator __position, size_type __n, const value_type& __x)
+      insert(const_iterator __position, size_type __n, const value_type& __x)  // Batch-insert
       {
 	difference_type __offset = __position - cbegin();
 	_M_fill_insert(begin() + __offset, __n, __x);
@@ -1482,7 +1482,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	_GLIBCXX20_CONSTEXPR
 	iterator
 	insert(const_iterator __position, _InputIterator __first,
-	       _InputIterator __last)
+	       _InputIterator __last)  // Range-insert
 	{
 	  difference_type __offset = __position - cbegin();
 	  _M_range_insert(begin() + __offset, __first, __last,
@@ -1650,7 +1650,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	pointer
 	_M_allocate_and_copy(size_type __n,
 			     _ForwardIterator __first, _ForwardIterator __last)
-	{
+	{  // _M_allocate_and_copy() 用 RAII guard 实现强异常安全保障
 	  _Guard_alloc __guard(this->_M_allocate(__n), __n, *this);
 	  std::__uninitialized_copy_a
 	    (__first, __last, __guard._M_storage, _M_get_Tp_allocator());
@@ -1718,11 +1718,11 @@ _GLIBCXX_BEGIN_NAMESPACE_CONTAINER
 	  const size_type __n = std::distance(__first, __last);
 	  pointer __start =
 	    this->_M_allocate(_S_check_init_len(__n, _M_get_Tp_allocator()));
-	  _Guard_alloc __guard(__start, __n, *this);
+	  _Guard_alloc __guard(__start, __n, *this);  // allocation guard 的用法：分配好内存后立即用 allocation guard 来接管，随后进行对象构造，如果 uninitialized_xxx 所有对象构造成功则立即释放 allocation guard；如果 uninitialized_xxx 构造过程抛出任何异常，则 uninitialized_xxx 在自动析构完所有已构造对象后，由 allocation guard 自动释放内存！实现了内存管理的闭环。
 	  this->_M_impl._M_finish = std::__uninitialized_copy_a
 	    (__first, __last, __start, _M_get_Tp_allocator());
 	  this->_M_impl._M_start = __start;
-	  (void) __guard._M_release();
+	  (void) __guard._M_release();   // void 用于忽略返回值
 	  this->_M_impl._M_end_of_storage = __start + __n;
 	}
 
